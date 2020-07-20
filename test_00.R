@@ -19,7 +19,7 @@ rm(list = ls())
 
 # VERIFICAMOS QUE ESTAN PRESENTES LOS PAQUETES NECESARIOS
 paste('Verificando paquetes necesarios: ',Sys.time()) # MENSAJE
-list.of.packages <- c("dplyr","sf","leaflet","pxR","data.table","htmlwidgets")
+list.of.packages <- c("dplyr","sf","leaflet","pxR","data.table","htmlwidgets","webshot")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -110,23 +110,13 @@ municipios_sp_wgs84_1999t <- as(municipios_sf_wgs84_1999t, "Spatial")
 #  addTiles() %>%
 #  addPolygons(data = municipios_sp_wgs84_1999t)
 
-# CONFIGURAR MAPA
-paleta_poblacion_hombres <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Hombres)
-paleta_poblacion_mujeres <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Mujeres)
+# CONFIGURAR MAPA DE EJEMPLO
 paleta_poblacion_total <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Total)
 label_total <- sprintf(
   "<strong>%s</strong><br/>Total: %g",
   municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Total
 ) %>% lapply(htmltools::HTML)
-label_hombres <- sprintf(
-  "<strong>%s</strong><br/>Hombres: %g",
-  municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Hombres
-) %>% lapply(htmltools::HTML)
-label_mujeres <- sprintf(
-  "<strong>%s</strong><br/>Mujeres: %g",
-  municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Mujeres
-) %>% lapply(htmltools::HTML)
-map1 <- leaflet(municipios_sp_wgs84_1999t) %>%
+map0 <- leaflet(municipios_sp_wgs84_1999t) %>%
   # Personalizar botones
   addEasyButton(easyButton(
     icon = "fa-globe", title = "Zoom completo",
@@ -137,26 +127,6 @@ map1 <- leaflet(municipios_sp_wgs84_1999t) %>%
   # Overlay groups
   addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
               opacity = 1.0, fillOpacity = 0.5,
-              fillColor = ~colorQuantile("YlOrRd", Hombres)(Hombres),
-              highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                  bringToFront = TRUE),
-              label = label_hombres,
-              labelOptions = labelOptions(
-                style = list("font-weight" = "normal", padding = "3px 8px"),
-                textsize = "15px",
-                direction = "auto"), group = "Hombres") %>%
-  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
-              opacity = 1.0, fillOpacity = 0.5,
-              fillColor = ~colorQuantile("YlOrRd", Mujeres)(Mujeres),
-              highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                  bringToFront = TRUE),
-              label = label_mujeres,
-              labelOptions = labelOptions(
-                style = list("font-weight" = "normal", padding = "3px 8px"),
-                textsize = "15px",
-                direction = "auto"), group = "Mujeres") %>%
-  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
-              opacity = 1.0, fillOpacity = 0.5,
               fillColor = ~colorQuantile("YlOrRd", Total)(Total),
               highlightOptions = highlightOptions(color = "white", weight = 2,
                                                   bringToFront = TRUE), 
@@ -165,26 +135,88 @@ map1 <- leaflet(municipios_sp_wgs84_1999t) %>%
                 style = list("font-weight" = "normal", padding = "3px 8px"),
                 textsize = "15px",
                 direction = "auto"), group = "Total") %>%
-  addLegend(group = "Hombres", position = "bottomright", pal = paleta_poblacion_hombres, values = ~Hombres,
-            title = "Población hombres",
-            labFormat = labelFormat(prefix = " "),
-            opacity = 0.7 ) %>%
-  addLegend(group = "Mujeres", position = "bottomright", pal = paleta_poblacion_mujeres, values = ~Mujeres,
-            title = "Población mujeres",
-            labFormat = labelFormat(prefix = " "),
-            opacity = 0.7 ) %>%
   addLegend(group = "Total", position = "bottomright", pal = paleta_poblacion_total, values = ~Total,
             title = "Población total",
             labFormat = labelFormat(prefix = " "),
-            opacity = 0.7 ) %>%
-  # Layers control
-  addLayersControl(
-    overlayGroups = c("Hombres","Mujeres","Total"),
-    options = layersControlOptions(collapsed = TRUE))
-map1 %>% hideGroup("Hombres") %>% hideGroup("Mujeres")
+            opacity = 0.7 )
 
-# CONVERTIR MAPA EN WIDGET HTML
-saveWidget(map1, file="pob_and_1999.html", selfcontained = FALSE)
+# CONFIGURAR MAPA COMPLETO
+#paleta_poblacion_hombres <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Hombres)
+#paleta_poblacion_mujeres <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Mujeres)
+#paleta_poblacion_total <- colorNumeric(palette = "YlOrRd", domain = municipios_sp_wgs84_1999t$Total)
+#label_total <- sprintf(
+#  "<strong>%s</strong><br/>Total: %g",
+#  municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Total
+#) %>% lapply(htmltools::HTML)
+# label_hombres <- sprintf(
+#   "<strong>%s</strong><br/>Hombres: %g",
+#   municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Hombres
+# ) %>% lapply(htmltools::HTML)
+# label_mujeres <- sprintf(
+#   "<strong>%s</strong><br/>Mujeres: %g",
+#   municipios_sp_wgs84_1999t$nombre, municipios_sp_wgs84_1999t$Mujeres
+# ) %>% lapply(htmltools::HTML)
+# map1 <- leaflet(municipios_sp_wgs84_1999t) %>%
+#   # Personalizar botones
+#   addEasyButton(easyButton(
+#     icon = "fa-globe", title = "Zoom completo",
+#     onClick = JS("function(btn, map){ map.setView([37.1, -4.7], 7);}"))) %>%
+#   addEasyButton(easyButton(
+#     icon = "fa-crosshairs", title = "Mi posición",
+#     onClick = JS("function(btn, map){ map.locate({setView: true});}"))) %>%
+#   # Overlay groups
+#   addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+#               opacity = 1.0, fillOpacity = 0.5,
+#               fillColor = ~colorQuantile("YlOrRd", Hombres)(Hombres),
+#               highlightOptions = highlightOptions(color = "white", weight = 2,
+#                                                   bringToFront = TRUE),
+#               label = label_hombres,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto"), group = "Hombres") %>%
+#   addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+#               opacity = 1.0, fillOpacity = 0.5,
+#               fillColor = ~colorQuantile("YlOrRd", Mujeres)(Mujeres),
+#               highlightOptions = highlightOptions(color = "white", weight = 2,
+#                                                   bringToFront = TRUE),
+#               label = label_mujeres,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto"), group = "Mujeres") %>%
+#   addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+#               opacity = 1.0, fillOpacity = 0.5,
+#               fillColor = ~colorQuantile("YlOrRd", Total)(Total),
+#               highlightOptions = highlightOptions(color = "white", weight = 2,
+#                                                   bringToFront = TRUE), 
+#               label = label_total,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto"), group = "Total") %>%
+#   addLegend(group = "Hombres", position = "bottomright", pal = paleta_poblacion_hombres, values = ~Hombres,
+#             title = "Población hombres",
+#             labFormat = labelFormat(prefix = " "),
+#             opacity = 0.7 ) %>%
+#   addLegend(group = "Mujeres", position = "bottomright", pal = paleta_poblacion_mujeres, values = ~Mujeres,
+#             title = "Población mujeres",
+#             labFormat = labelFormat(prefix = " "),
+#             opacity = 0.7 ) %>%
+#   addLegend(group = "Total", position = "bottomright", pal = paleta_poblacion_total, values = ~Total,
+#             title = "Población total",
+#             labFormat = labelFormat(prefix = " "),
+#             opacity = 0.7 ) %>%
+#   # Layers control
+#   addLayersControl(
+#     overlayGroups = c("Hombres","Mujeres","Total"),
+#     options = layersControlOptions(collapsed = TRUE))
+# map1 %>% hideGroup("Hombres") %>% hideGroup("Mujeres")
+
+# CONVERTIR MAPA EN WIDGET HTML Y PNG
+saveWidget(map0, file="pob_and_1999.html", selfcontained = FALSE)
+webshot("pob_and_1999.html", file = "pob_and_1999.png",
+        cliprect = "viewport")
 
 # HORA DE FIN
 paste('Fin del script Test_00.R: ',Sys.time()) # MENSAJE
@@ -195,4 +227,4 @@ rm(list = ls())
 # SE RESTAURA PARA QUE DEVUELVA LOS LOG EN PANTALLA
 #sink()
 
-# FIN DEL SCRIP DE CREACION DE DATOS EN CSV Y DATASETS PARA EXPLOTACIONES TABULARES Y GRAFICAS.
+# FIN DEL SCRIPT.
